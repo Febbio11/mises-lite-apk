@@ -29,16 +29,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 4. Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: 5. Eksekusi Build dengan Gradle Action
+      - name: 4. Compile APK dengan Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.5'
           arguments: assembleDebug --stacktrace
 
-      - name: 6. Simpan File APK Siap Download
+      - name: 5. Simpan File APK Siap Download
         uses: actions/upload-artifact@v4
         with:
           name: Mises-Lite-Browser-APK
