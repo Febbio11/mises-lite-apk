@@ -1,0 +1,41 @@
+name: Build Mises Lite Browser APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Ambil File dari Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Ekstrak File ZIP di Server GitHub
+        run: |
+          unzip -o MisesLiteBrowser_Android_Project.zip -d .
+
+      - name: 3. Setup Java 17 & Android SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: 4. Build File APK
+        run: |
+          gradle assembleDebug assembleRelease --stacktrace
+
+      - name: 5. Siapkan Link Download APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mises-Lite-Browser-APK
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          retention-days: 30
