@@ -13,9 +13,11 @@ jobs:
       - name: 1. Ambil File dari Repository
         uses: actions/checkout@v4
 
-      - name: 2. Ekstrak File ZIP di Server GitHub
+      - name: 2. Ekstrak File Project Otomatis
         run: |
-          unzip -o MisesLiteBrowser_Android_Project.zip -d .
+          ZIP_NAME=$(ls *.zip 2>/dev/null | head -n 1)
+          echo "Mengekstrak file: $ZIP_NAME"
+          unzip -o "$ZIP_NAME" -d .
 
       - name: 3. Setup Java 17 & Android SDK
         uses: actions/setup-java@v4
@@ -27,7 +29,7 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: 4. Build File APK
+      - name: 4. Compile File APK
         run: |
           gradle assembleDebug assembleRelease --stacktrace
 
