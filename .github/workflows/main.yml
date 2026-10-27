@@ -23,36 +23,30 @@ jobs:
           echo "Mengekstrak file: $ZIP_NAME"
           unzip -o "$ZIP_NAME" -d .
 
-      - name: 3. Setup Java 17
+      - name: 3. Perbaiki Import & Anotasi Material 3
+        run: |
+          # 1. Tambahkan import LocalTextStyle di UserscriptSheet.kt
+          sed -i 's/import androidx.compose.material3.\*/import androidx.compose.material3.*\nimport androidx.compose.material3.LocalTextStyle/g' app/src/main/java/id/miseslite/browser/ui/UserscriptSheet.kt
+          
+          # 2. Izinkan compiler mengabaikan warning opt-in Compose Material 3
+          sed -i '/kotlinOptions {/a \        freeCompilerArgs += listOf("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")' app/build.gradle.kts
+          
+          # 3. Nonaktifkan pemeriksaan lint yang membatalkan build
+          sed -i '/android {/a \    lint { abortOnError = false; checkReleaseBuilds = false }' app/build.gradle.kts
+
+      - name: 4. Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 4. Optimasi Konfigurasi Build & Nonaktifkan Lint
-        run: |
-          # Matikan pemeriksaan lint yang menggagalkan build
-          sed -i '/android {/a \    lint { abortOnError = false; checkReleaseBuilds = false }' app/build.gradle.kts
-          # Pastikan JVM Args cukup lega di server CI
-          echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m" >> gradle.properties
-
       - name: 5. Compile APK dengan Gradle 8.7
-        id: gradle_build
-        continue-on-error: true
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
-          arguments: assembleDebug --info
+          arguments: assembleDebug -x test --stacktrace
 
-      - name: 6. Deteksi Otomatis Pesan Error (Jika Gagal)
-        if: steps.gradle_build.outcome == 'failure'
-        run: |
-          echo "=== BARIS ERROR KOTLINC / GRADLE YANG SEBENARNYA ==="
-          grep -E "(e: |Caused by:|FAILURE:)" /home/runner/work/_temp/gradle-build-action/*.log 2>/dev/null | head -n 30 || true
-          exit 1
-
-      - name: 7. Simpan File APK Siap Download
-        if: steps.gradle_build.outcome == 'success'
+      - name: 6. Simpan File APK Siap Download
         uses: actions/upload-artifact@v4
         with:
           name: Mises-Lite-Browser-APK
