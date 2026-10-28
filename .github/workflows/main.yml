@@ -23,16 +23,19 @@ jobs:
           echo "Mengekstrak file: $ZIP_NAME"
           unzip -o "$ZIP_NAME" -d .
 
-      - name: 3. Perbaiki Import & Anotasi Material 3
+      - name: 3. Perbaiki Sintaksis & Import Kotlin
         run: |
           # 1. Tambahkan import LocalTextStyle di UserscriptSheet.kt
-          sed -i 's/import androidx.compose.material3.\*/import androidx.compose.material3.*\nimport androidx.compose.material3.LocalTextStyle/g' app/src/main/java/id/miseslite/browser/ui/UserscriptSheet.kt
-          
-          # 2. Izinkan compiler mengabaikan warning opt-in Compose Material 3
-          sed -i '/kotlinOptions {/a \        freeCompilerArgs += listOf("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")' app/build.gradle.kts
-          
-          # 3. Nonaktifkan pemeriksaan lint yang membatalkan build
-          sed -i '/android {/a \    lint { abortOnError = false; checkReleaseBuilds = false }' app/build.gradle.kts
+          sed -i 's/import androidx.compose.material3.\*/import androidx.compose.material3.*\nimport androidx.compose.material3.LocalTextStyle/g' app/src/main/java/id/miseslite/browser/ui/UserscriptSheet.kt 2>/dev/null || true
+
+          # 2. Tambahkan anotasi @OptIn di BrowserScreen.kt
+          sed -i 's/@Composable\nfun BrowserScreen/@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun BrowserScreen/g' app/src/main/java/id/miseslite/browser/ui/BrowserScreen.kt 2>/dev/null || true
+
+          # 3. Masukkan flag opt-in Material 3 ke kotlinOptions di build.gradle.kts
+          sed -i '/kotlinOptions {/a \        freeCompilerArgs += listOf("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")' app/build.gradle.kts 2>/dev/null || true
+
+          # 4. Matikan pemeriksaan lint yang membatalkan build
+          sed -i '/android {/a \    lint { abortOnError = false; checkReleaseBuilds = false }' app/build.gradle.kts 2>/dev/null || true
 
       - name: 4. Setup Java 17
         uses: actions/setup-java@v4
@@ -40,13 +43,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 5. Compile APK dengan Gradle 8.7
+      - name: 5. Setup Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.7'
-          arguments: assembleDebug -x test --stacktrace
 
-      - name: 6. Simpan File APK Siap Download
+      - name: 6. Compile APK Android
+        run: |
+          gradle assembleDebug -x test --no-daemon --stacktrace
+
+      - name: 7. Simpan File APK Siap Download
         uses: actions/upload-artifact@v4
         with:
           name: Mises-Lite-Browser-APK
